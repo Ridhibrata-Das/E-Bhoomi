@@ -67,9 +67,9 @@ async function main() {
       npkAverage
     };
 
-    console.log('Gemini variables snapshot:\n', JSON.stringify(output, null, 2));
+    console.log('Balaram AI variables snapshot:\n', JSON.stringify(output, null, 2));
   } catch (err) {
-    console.error('checkGeminiVars failed:', err?.message || err);
+    console.error('checkBalaramAIVars failed:', err?.message || err);
     process.exit(1);
   }
 }

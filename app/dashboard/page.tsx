@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { fetchSoilMoistureData, fetchThingSpeakHistory, fetchNPKData, fetchCurrentNPK } from "@/lib/thingspeak";
 import { fetchWeatherData } from "@/lib/weather";
+import { getAgricultureRecommendation, getActionColor, getActionIcon, getActionUrgency, getUrgencyColor, getUrgencyIcon } from "@/lib/agricultureService";
 import type { SoilMoistureData, ThingSpeakData, NPKData } from "@/lib/thingspeak";
 import type { WeatherData } from "@/lib/weather";
+import type { AgricultureRecommendation } from "@/lib/agricultureService";
 import { cn } from "@/lib/utils";
 
 import {
@@ -30,8 +32,11 @@ import {
   Thermometer, 
   Gauge,
   MapPin,
-  Loader2
+  Loader2,
+  Sun
 } from 'lucide-react';
+import Link from 'next/link';
+import { Brain, Activity, Calendar, Phone } from 'lucide-react';
 
 declare global {
   namespace JSX {
@@ -140,6 +145,28 @@ export default function DashboardPage() {
     change: 0,
     increasing: true
   });
+  const [agricultureRecommendation, setAgricultureRecommendation] = useState<AgricultureRecommendation | null>(null);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+
+  const fetchRecommendation = async () => {
+    try {
+      setRecommendationLoading(true);
+      console.log('Fetching agriculture recommendation...');
+      const recommendation = await getAgricultureRecommendation();
+      if (recommendation) {
+        console.log('Successfully received recommendation:', recommendation);
+        setAgricultureRecommendation(recommendation);
+      } else {
+        console.warn('No recommendation received');
+        setAgricultureRecommendation(null);
+      }
+    } catch (error) {
+      console.error('Error fetching recommendation:', error);
+      toast.error(`Failed to get recommendation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setRecommendationLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -180,6 +207,9 @@ export default function DashboardPage() {
             : "Alert: Plants need water! SMS notification sent."
         );
       }
+      // Fetch agriculture recommendation
+      await fetchRecommendation();
+      
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to fetch sensor data. Please try again later.');
@@ -573,50 +603,133 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Smart Agriculture Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-600 flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
-              {location.locationName}
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={detectLocation}
-              disabled={isLocating}
-              className="flex items-center gap-2"
-            >
-              {isLocating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <MapPin className="h-4 w-4" />
-              )}
-              {isLocating ? 'Detecting Location...' : 'Detect Location'}
-            </Button>
+    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Welcome Header - e-bhoomi style */}
+        <div className="bg-gradient-to-r from-green-600 via-green-700 to-blue-600 rounded-xl p-6 text-white shadow-lg flex items-center justify-between min-h-[120px]">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back!</h1>
+            <p className="text-lg opacity-90 mt-2">Here's today's overview.</p>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-bold">{weatherData.temperature?.toFixed(1)}°C</div>
+            <div className="opacity-90 mt-1">Updated {new Date().toLocaleTimeString()}</div>
+            <div className="opacity-70 mt-1 flex items-center justify-end"><MapPin className="h-4 w-4 mr-1" />{location.locationName}</div>
           </div>
         </div>
-        
-        {renderSensorCards()}
 
-        {/* Graphs Section */}
-        <div className="grid grid-cols-1 gap-8">
-          {/* Soil Moisture Graph */}
-          {renderGraph('soilMoisture', historyData, '#EA580C', '%')}
-          
-          {/* Temperature Graph */}
-          {renderGraph('temperature', historyData, '#2563EB', '°C')}
-          
-          {/* Humidity Graph */}
-          {renderGraph('humidity', historyData, '#16A34A', '%')}
-
-          {/* NPK Graph */}
-          {renderNPKGraph(npkHistoryData, 'ppm')}
+        {/* Location Action */}
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            onClick={detectLocation}
+            disabled={isLocating}
+            className="flex items-center gap-2"
+          >
+            {isLocating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MapPin className="h-4 w-4" />
+            )}
+            {isLocating ? 'Detecting Location...' : 'Detect Location'}
+          </Button>
         </div>
 
-        {/* Omnidim Call Button (large circular) below graphs */}
-        <div className="flex justify-center mt-6 mb-2">
+        {/* Key Metrics - e-bhoomi styled cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            { label: 'Temperature', value: `${weatherData.temperature?.toFixed(1)}°C`, icon: Thermometer, color: 'blue', status: 'Current' },
+            { label: 'Humidity', value: `${weatherData.humidity?.toFixed(1)}%`, icon: Droplets, color: 'green', status: 'Current' },
+            { label: 'Soil Moisture', value: `${soilMoistureData.soilMoisture?.toFixed(1)}%`, icon: Gauge, color: 'purple', status: soilMoistureTrend.increasing ? 'Rising' : 'Falling' },
+            { label: 'NPK Avg', value: `${((npkData.nitrogen + npkData.phosphorus + npkData.potassium) / 3).toFixed(1)} ppm`, icon: Sun, color: 'yellow', status: npkTrend.increasing ? 'Rising' : 'Falling' },
+            { label: 'Range', value: timeRanges.find(r => r.value === selectedRange)?.label || 'Last 24 Hours', icon: Loader2, color: 'red', status: 'Charts' },
+          ].map((m) => (
+            <div key={m.label} className={`bg-white p-6 rounded-xl shadow-sm border-l-4 border-${m.color}-500`}>
+              <div className="flex justify-between">
+                <div>
+                  <p className="text-sm opacity-70">{m.label}</p>
+                  <div className="text-2xl font-bold">{m.value}</div>
+                  <p className="text-xs opacity-70 mt-1">{m.status}</p>
+                </div>
+                <m.icon className={`h-8 w-8 text-${m.color}-500`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Suggestion Card */}
+        {agricultureRecommendation && (
+          <Card className={`p-6 mb-6 border-2 ${getUrgencyColor(getActionUrgency(agricultureRecommendation.action))}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getUrgencyIcon(getActionUrgency(agricultureRecommendation.action))}</span>
+                <div>
+                  <h3 className="text-xl font-bold">Action Suggested</h3>
+                  <p className="text-sm opacity-75">Based on current sensor readings</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getActionColor(agricultureRecommendation.action)}`}>
+                  {getActionIcon(agricultureRecommendation.action)} {agricultureRecommendation.action}
+                </div>
+                <p className="text-xs mt-1 opacity-75">
+                  Confidence: {Math.round(agricultureRecommendation.confidence * 100)}%
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-white/50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold mb-1">Analysis</h4>
+                  <p className="text-sm">{agricultureRecommendation.semantic_tag}</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex gap-2 text-xs">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                      NDI: {agricultureRecommendation.ndi_label}
+                    </span>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                      PDI: {agricultureRecommendation.pdi_label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {recommendationLoading && (
+          <Card className="p-6 mb-6">
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Analyzing sensor data for recommendations...</span>
+            </div>
+          </Card>
+        )}
+
+        {/* Graphs Section - e-bhoomi overview style */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* NPK, Temperature, Humidity */}
+          {renderNPKGraph(npkHistoryData, 'ppm')}
+          {renderGraph('temperature', historyData, '#2563EB', '°C')}
+          {renderGraph('humidity', historyData, '#16A34A', '%')}
+        </div>
+
+        {/* Quick Actions - e-bhoomi style */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Link href="/dashboard/balaram-ai" className="p-4 bg-green-600 text-white rounded-xl text-center hover:bg-green-700">
+            <Brain className="h-8 w-8 mx-auto mb-2" />
+            <div>Ask Balaram AI</div>
+          </Link>
+          <Link href="/dashboard/sensors" className="p-4 bg-blue-600 text-white rounded-xl text-center hover:bg-blue-700">
+            <Activity className="h-8 w-8 mx-auto mb-2" />
+            <div>Sensors</div>
+          </Link>
+          <Link href="/dashboard/alerts" className="p-4 bg-red-600 text-white rounded-xl text-center hover:bg-red-700">
+            <Activity className="h-8 w-8 mx-auto mb-2" />
+            <div>Alerts</div>
+          </Link>
           <button
             onClick={async () => {
               const input = window.prompt('Enter 10-digit phone number (India):');
@@ -640,20 +753,26 @@ export default function DashboardPage() {
                 })
               });
               if (res.ok) {
-                toast.success("AI call initiated");
+                toast.success('AI call initiated');
               } else {
                 const msg = await res.json().catch(() => ({}));
-                toast.error(msg?.error || "Failed to start call");
+                toast.error(msg?.error || 'Failed to start call');
               }
             }}
-            aria-label="Call AI Agent"
-            className="h-24 w-24 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-xl flex items-center justify-center transition-colors"
+            className="p-4 bg-orange-600 text-white rounded-xl text-center hover:bg-orange-700"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-10 w-10">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2 5a2 2 0 012-2h2.28a2 2 0 011.94 1.515l.56 2.24a2 2 0 01-.72 2.117l-1.2.9a16 16 0 007.2 7.2l.9-1.2a2 2 0 012.117-.72l2.24.56A2 2 0 0121 17.72V20a2 2 0 01-2 2h-1C9.82 22 2 14.18 2 5V5z" />
-            </svg>
+            <Phone className="h-8 w-8 mx-auto mb-2" />
+            <div>Schedule</div>
           </button>
         </div>
+
+
+        {/* Bottom placeholders */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-6"><h3 className="text-lg font-semibold mb-2">Yield Projection</h3><p className="text-sm text-gray-500">Coming soon</p></Card>
+          <Card className="p-6"><h3 className="text-lg font-semibold mb-2">Crop Health</h3><p className="text-sm text-gray-500">Coming soon</p></Card>
+        </div>
+
 
         {/* ElevenLabs Widget (call button removed to keep single CTA) */}
         <div className="mt-8">
@@ -665,7 +784,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Debug card removed per request */}
       </div>
     </div>
   );

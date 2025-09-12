@@ -23,9 +23,9 @@ export interface ThingSpeakResponse {
     field1: string; // soil moisture
     field2: string; // temperature
     field3: string; // humidity
-    field4: string; // nitrogen (N)
-    field5: string; // phosphorus (P)
-    field6: string; // potassium (K)
+    field5: string; // nitrogen (N)
+    field6: string; // phosphorus (P)
+    field7: string; // potassium (K)
   }>;
 }
 
@@ -269,9 +269,9 @@ export async function fetchNPKData(timeRange: string = '24h'): Promise<NPKData[]
     }
 
     const processedData = data.feeds.map(feed => ({
-      nitrogen: parseNumericValue(feed.field4),
-      phosphorus: parseNumericValue(feed.field5),
-      potassium: parseNumericValue(feed.field6),
+      nitrogen: parseNumericValue(feed.field5),
+      phosphorus: parseNumericValue(feed.field6),
+      potassium: parseNumericValue(feed.field7),
       time: new Date(feed.created_at).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
@@ -319,5 +319,38 @@ export async function fetchCurrentNPK(): Promise<{
   } catch (error) {
     console.error('Error fetching current NPK data:', error);
     throw error;
+  }
+}
+
+export async function fetchLatestSensorData(): Promise<ThingSpeakResponse['feeds'][0] | null> {
+  try {
+    const THINGSPEAK_CHANNEL_ID = process.env.NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID;
+    const THINGSPEAK_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
+
+    if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_API_KEY) {
+      console.error('ThingSpeak configuration missing');
+      return null;
+    }
+
+    const url = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}/feeds.json?api_key=${THINGSPEAK_API_KEY}&results=1`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`ThingSpeak API error: ${response.status}`);
+    }
+
+    const data: ThingSpeakResponse = await response.json();
+    
+    if (!data.feeds || data.feeds.length === 0) {
+      console.warn('No sensor data available');
+      return null;
+    }
+
+    return data.feeds[0];
+
+  } catch (error) {
+    console.error('Error fetching latest sensor data:', error);
+    return null;
   }
 }

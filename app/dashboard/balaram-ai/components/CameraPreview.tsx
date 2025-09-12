@@ -160,7 +160,7 @@ export default function CameraPreview({ onTranscription, className }: CameraPrev
     setConnectionStatus('connecting');
     geminiWsRef.current = new GeminiWebSocket(
       (text) => {
-        console.log("Received from Gemini:", text);
+        console.log("Received from Balaram AI:", text);
       },
       () => {
         console.log("[Camera] WebSocket setup complete, starting media capture");
@@ -317,7 +317,7 @@ export default function CameraPreview({ onTranscription, className }: CameraPrev
             <div className="text-center space-y-3 px-4 md:px-6 py-3 md:py-4 bg-black/40 rounded-2xl backdrop-blur-md">
               <div className="animate-spin rounded-full h-8 w-8 md:h-10 md:w-10 border-3 border-white border-t-transparent mx-auto" />
               <p className="text-white font-semibold text-base md:text-lg">
-                {connectionStatus === 'connecting' ? 'Connecting to Gemini...' : 'Disconnected'}
+                {connectionStatus === 'connecting' ? 'Connecting to Balaram AI...' : 'Disconnected'}
               </p>
               <p className="text-white/80 text-xs md:text-sm">
                 Please wait while we establish a secure connection

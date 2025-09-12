@@ -1,6 +1,8 @@
 // Sensor Data Service - Consolidates all sensor data fetching for GeminiWebSocket
 // This service fetches data from ThingSpeak, Open-Meteo, and other APIs
 
+import { ThingSpeakResponse } from '@/lib/thingspeak';
+
 // API Keys and Configuration
 const THINGSPEAK_CHANNEL_ID = process.env.NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID;
 const THINGSPEAK_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
@@ -203,13 +205,13 @@ export async function fetchNPKData(timeRange: string = '24h'): Promise<NPKData[]
       throw new Error(`ThingSpeak API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: ThingSpeakResponse = await response.json();
     const feeds = data.feeds || [];
     
-    return feeds.map(feed => ({
-      nitrogen: parseNumericValue(feed.field4),
-      phosphorus: parseNumericValue(feed.field5),
-      potassium: parseNumericValue(feed.field6),
+    return feeds.map((feed: ThingSpeakResponse['feeds'][0]) => ({
+      nitrogen: parseNumericValue(feed.field5),
+      phosphorus: parseNumericValue(feed.field6),
+      potassium: parseNumericValue(feed.field7),
       time: feed.created_at
     }));
   } catch (error) {

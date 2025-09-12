@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { Leaf } from "lucide-react";
 
@@ -10,8 +11,14 @@ export function LoadingScreen() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="relative">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-2xl">
-              <Leaf className="h-8 w-8 text-white" />
+            <div className="w-16 h-16 rounded-lg shadow-2xl overflow-hidden">
+              <Image 
+                src="/logo.png" 
+                alt="E-Bhoomi Logo" 
+                width={64} 
+                height={64}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
           </div>

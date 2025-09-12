@@ -26,7 +26,10 @@ export class TranscriptionService {
       ]);
 
       const transcription = result.response.text();
-      const response = await this.chatService.generateResponse(transcription);
+      const response = await this.chatService.generateResponse({
+        userInput: transcription,
+        systemPrompt: "You are an agricultural expert. Provide helpful advice based on the user's question."
+      });
       return response;
     } catch (error) {
       console.error("Transcription error:", error);
