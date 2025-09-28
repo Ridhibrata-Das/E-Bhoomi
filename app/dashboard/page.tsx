@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { fetchSoilMoistureData, fetchThingSpeakHistory, fetchNPKData, fetchCurrentNPK } from "@/lib/thingspeak";
-import { fetchWeatherData } from "@/lib/weather";
+import { fetchWeatherData, fetchEvapotranspirationData } from "@/lib/weather";
+import type { EvapotranspirationData } from "@/lib/weather";
 import { getAgricultureRecommendation, getActionColor, getActionIcon, getActionUrgency, getUrgencyColor, getUrgencyIcon } from "@/lib/agricultureService";
 import type { SoilMoistureData, ThingSpeakData, NPKData } from "@/lib/thingspeak";
 import type { WeatherData } from "@/lib/weather";
@@ -147,6 +148,7 @@ export default function DashboardPage() {
   });
   const [agricultureRecommendation, setAgricultureRecommendation] = useState<AgricultureRecommendation | null>(null);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [etData, setEtData] = useState<EvapotranspirationData | null>(null);
 
   const fetchRecommendation = async () => {
     try {
@@ -439,13 +441,14 @@ export default function DashboardPage() {
         const weather = await fetchWeatherData(location.latitude, location.longitude);
         setWeatherData(weather);
 
-        // Fetch ThingSpeak data (current and history)
-        const [thingSpeakHistory, soilMoistureResult, npkHistory, currentNPK] = await Promise.all([
-          fetchThingSpeakHistory(selectedRange),
-          fetchSoilMoistureData(selectedRange),
-          fetchNPKData(selectedRange),
-          fetchCurrentNPK()
-        ]);
+      // Fetch ThingSpeak data (current and history) and ET in parallel
+      const [thingSpeakHistory, soilMoistureResult, npkHistory, currentNPK, evapotranspiration] = await Promise.all([
+        fetchThingSpeakHistory(selectedRange),
+        fetchSoilMoistureData(selectedRange),
+        fetchNPKData(selectedRange),
+        fetchCurrentNPK(),
+        fetchEvapotranspirationData(location.latitude, location.longitude)
+      ]);
 
         setHistoryData(thingSpeakHistory);
         setSoilMoistureData(soilMoistureResult.currentData);
@@ -453,6 +456,7 @@ export default function DashboardPage() {
         setNpkHistoryData(npkHistory);
         setNpkData(currentNPK.currentData);
         setNpkTrend(currentNPK.trend);
+      setEtData(evapotranspiration);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -574,6 +578,60 @@ export default function DashboardPage() {
       </div>
     </Card>
   );
+
+  // Helper to render generic ET-based charts
+  const renderETGraph = (
+    title: string,
+    seriesKey: 'evaporation' | 'pet' | 'aet' | 'soilMoisture',
+    color: string,
+    unit: string
+  ) => {
+    // Build combined series from historical + forecast for smoother line
+    const series = etData ? [
+      ...etData.historical.map(d => ({
+        time: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        evaporation: d.evaporation,
+        pet: d.pet,
+        aet: d.aet,
+        soilMoisture: d.soilMoisture
+      })),
+      ...etData.forecast.map(d => ({
+        time: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        evaporation: d.evaporation,
+        pet: d.pet,
+        aet: d.aet,
+        soilMoisture: d.soilMoisture
+      }))
+    ] : [];
+
+    return (
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <div className="text-sm text-gray-500">{location.locationName}</div>
+        </div>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={series}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey={seriesKey}
+                name={`${title} (${unit})`}
+                stroke={color}
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    );
+  };
 
   const renderSensorCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -714,6 +772,13 @@ export default function DashboardPage() {
           {renderNPKGraph(npkHistoryData, 'ppm')}
           {renderGraph('temperature', historyData, '#2563EB', '°C')}
           {renderGraph('humidity', historyData, '#16A34A', '%')}
+        </div>
+
+        {/* ET Graphs: Evaporation, Evapotranspiration, Soil Moisture */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {renderETGraph('Evaporation', 'evaporation', '#9333EA', 'mm/day')}
+          {renderETGraph('Evapotranspiration (AET)', 'aet', '#0EA5E9', 'mm/day')}
+          {renderETGraph('Soil Moisture', 'soilMoisture', '#F59E0B', '%')}
         </div>
 
         {/* Quick Actions - e-bhoomi style */}

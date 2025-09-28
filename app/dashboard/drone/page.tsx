@@ -126,7 +126,7 @@ export default function DroneViewPage() {
                 <SelectValue placeholder="Model" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ssun">SSUN (Joint)</SelectItem>
+                <SelectItem value="ssun">Pipeline (Joint)</SelectItem>
                 <SelectItem value="lstm">LSTM (Spectral)</SelectItem>
                 <SelectItem value="mscnn">MSCNN (Spatial)</SelectItem>
               </SelectContent>
