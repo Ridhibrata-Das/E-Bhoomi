@@ -3,7 +3,7 @@ import { TranscriptionService } from './transcriptionService';
 import { pcmToWav } from '../utils/audio';
 import { getCurrentSensorData, getFormattedSensorDataForAI, getGeminiVariables, refreshAllSensorData } from './sensorDataService';
 
-const MODEL = "models/gemini-2.0-flash-exp";
+const MODEL = "models/gemini-2.0-flash-live-preview-04-09";
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 const HOST = "generativelanguage.googleapis.com";
 const WS_URL = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
@@ -259,4 +259,5 @@ export class GeminiWebSocket {
       this.ws = null;
     }
   }
+
 } 
