@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getGeminiVariables } from "./sensorDataService";
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
-const MODEL_NAME = "models/gemini-2.0-flash-exp";
+const MODEL_NAME = "models/gemini-2.0-flash-live-preview-04-09";
 
 export class GeminiChatService {
   private model;
@@ -61,4 +61,5 @@ export class GeminiChatService {
       reader.readAsDataURL(file);
     });
   }
+
 } 
