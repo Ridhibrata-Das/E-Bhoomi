@@ -1,7 +1,7 @@
 Positron-IET — System Understanding Document
 
 Overview
-Positron-IET is a Next.js 13 (App Router) TypeScript web application for a smart agriculture dashboard. It ingests environmental and soil sensor telemetry (ThingSpeak), fetches weather data (Open‑Meteo), generates alerts via SMS (Twilio), provides AI assistance via multimodal multilingual agentic LLM using vision transformers for plant anomaly detection (Google Gemini), and includes real‑time device control via MQTT. The system features "Balaram AI" for real‑time multimodal conversations and "Bhoomi Dut" for agentic AI calling capabilities. The UI is built with Tailwind CSS and a rich set of headless components (Radix UI/Shadcn). An ElevenLabs conversational widget is included on the main dashboard.
+Positron-IET is a Next.js 13 (App Router) TypeScript web application for a smart agriculture dashboard. It in gests environmental and soil sensor telemetry (ThingSpeak), fetches weather data (Open‑Meteo), generates alerts via SMS (Twilio), provides AI assistance via multimodal multilingual agentic LLM using vision transformers for plant anomaly detection (Google Gemini), and includes real‑time device control via MQTT. The system features "Balaram AI" for real‑time multimodal conversations and "Bhoomi Dut" for agentic AI calling capabilities. The UI is built with Tailwind CSS and a rich set of headless components (Radix UI/Shadcn). An ElevenLabs conversational widget is included on the main dashboard.
 
 Key Capabilities
 - Sensor monitoring: Temperature, humidity, soil moisture, NPK levels — live and historical charts with range selection and polling.
@@ -191,3 +191,4 @@ File Map (selected)
 - next.config.js — Next.js config (ESLint ignore, unoptimized images)
 
 End of document.
+
